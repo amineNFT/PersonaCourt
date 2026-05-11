@@ -114,7 +114,7 @@ export default function GameRound({ ctx, onFinish, onAbort }: Props) {
     } catch (e) {
       console.error(e);
       setError(
-        "The clerk did not confirm your filing. Strike the gavel again — duplicates are stricken from the record.",
+        "Submit again.",
       );
       setState("input");
     }
