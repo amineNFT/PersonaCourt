@@ -2,11 +2,13 @@
 // Deploy the Persona Court Intelligent Contract to a GenLayer network.
 //
 // Usage:
-//   node --env-file=.env.local scripts/deploy.mjs                    # → testnetBradbury
+//   node --env-file=.env.local scripts/deploy.mjs                    # → studionet (default, fast)
+//   node --env-file=.env.local scripts/deploy.mjs studionet
 //   node --env-file=.env.local scripts/deploy.mjs testnetBradbury
 //
 // Via npm:
-//   npm run deploy
+//   npm run deploy           # studionet
+//   npm run deploy:bradbury  # bradbury
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -16,7 +18,7 @@ import { createClient, createAccount, chains } from "genlayer-js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
-const NETWORK = (process.argv[2] ?? process.env.GENLAYER_NETWORK ?? "testnetBradbury").trim();
+const NETWORK = (process.argv[2] ?? process.env.GENLAYER_NETWORK ?? "studionet").trim();
 if (!chains[NETWORK]) {
   console.error(
     `Unknown network "${NETWORK}". Available: ${Object.keys(chains).join(", ")}`,
@@ -38,10 +40,14 @@ if (!PK) {
 const account = createAccount(PK);
 const client = createClient({ chain: chains[NETWORK], account });
 
+const ENV_KEYS = {
+  studionet: "NEXT_PUBLIC_STUDIONET_PERSONA_COURT",
+  testnetBradbury: "NEXT_PUBLIC_BRADBURY_PERSONA_COURT",
+};
 const TARGET = {
   game: "persona_court",
   file: "persona_court.py",
-  envKey: "NEXT_PUBLIC_BRADBURY_PERSONA_COURT",
+  envKey: ENV_KEYS[NETWORK] || "NEXT_PUBLIC_BRADBURY_PERSONA_COURT",
 };
 
 console.log(

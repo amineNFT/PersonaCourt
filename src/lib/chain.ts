@@ -2,19 +2,23 @@
 
 // Central GenLayer chain & contract registry for Persona Court.
 //
-// Single network: GenLayer Bradbury Testnet.
+// Networks: GenLayer Studionet (fast, dev) and Bradbury Testnet (public).
 
 import { chains } from "genlayer-js";
 
 export type GameKey = "persona_court";
 
-export type NetworkId = "testnetBradbury";
+export type NetworkId = "studionet" | "testnetBradbury";
 
 const STORAGE_KEY = "pc.network";
 export const CHAIN_CHANGE_EVENT = "pc:chainchange";
 
 // ── Per-network contract addresses ────────────────────────────────────────────────────────
 const CONTRACTS: Record<NetworkId, Record<GameKey, string>> = {
+  studionet: {
+    persona_court:
+      process.env.NEXT_PUBLIC_STUDIONET_PERSONA_COURT || "",
+  },
   testnetBradbury: {
     persona_court:
       process.env.NEXT_PUBLIC_BRADBURY_PERSONA_COURT ||
@@ -23,19 +27,21 @@ const CONTRACTS: Record<NetworkId, Record<GameKey, string>> = {
 };
 
 export const NETWORK_LABELS: Record<NetworkId, string> = {
+  studionet: "Studionet",
   testnetBradbury: "Bradbury Testnet",
 };
 
 export const NETWORK_DESCRIPTIONS: Record<NetworkId, string> = {
+  studionet: "GenLayer Studionet — fast dev network.",
   testnetBradbury: "GenLayer Bradbury — long-lived public testnet.",
 };
 
-const DEFAULT_NETWORK: NetworkId = "testnetBradbury";
+const DEFAULT_NETWORK: NetworkId = "studionet";
 
 function readStored(): NetworkId {
   if (typeof window === "undefined") return DEFAULT_NETWORK;
   const v = window.localStorage.getItem(STORAGE_KEY);
-  if (v === "testnetBradbury") return v;
+  if (v === "studionet" || v === "testnetBradbury") return v;
   return DEFAULT_NETWORK;
 }
 
@@ -70,5 +76,5 @@ export function isNetworkConfigured(id: NetworkId): boolean {
 }
 
 export function listNetworks(): NetworkId[] {
-  return ["testnetBradbury"];
+  return ["studionet", "testnetBradbury"];
 }

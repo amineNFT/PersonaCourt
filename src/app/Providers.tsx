@@ -9,6 +9,7 @@ import {
 import { WagmiProvider } from "wagmi";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import "@rainbow-me/rainbowkit/styles.css";
+import ChainSync from "@/components/ChainSync";
 
 export const genlayerBradbury = {
   id: 4221,
@@ -22,10 +23,19 @@ export const genlayerBradbury = {
   },
 } as const;
 
+export const genlayerStudionet = {
+  id: 61_999,
+  name: "GenLayer Studionet",
+  nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 },
+  rpcUrls: {
+    default: { http: ["https://studio.genlayer.com:8443/api"] },
+  },
+} as const;
+
 const config = getDefaultConfig({
   appName: "Persona Court",
   projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
-  chains: [genlayerBradbury],
+  chains: [genlayerStudionet, genlayerBradbury],
   ssr: true,
 });
 
@@ -44,6 +54,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             overlayBlur: "small",
           })}
         >
+          <ChainSync />
           {children}
         </RainbowKitProvider>
       </QueryClientProvider>
