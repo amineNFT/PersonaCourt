@@ -1,0 +1,30 @@
+// Wild everyday scenarios that every player answers to — in-character.
+// Each game, the host rolls N random scenarios (one per round).
+
+export const SCENARIOS: string[] = [
+  "Boardroom meeting about this quarter's catastrophic losses.",
+  "Ordering coffee at an overpriced hipster café with a nine-minute queue.",
+  "Giving a motivational TED talk to a bored auditorium.",
+  "Being pulled over for a broken tail-light at 2am.",
+  "Arguing at a neighborhood HOA meeting about a fence's paint color.",
+  "Trapped in an elevator with your ex and their new partner.",
+  "Hosting a kids' birthday party that's spiraling out of control.",
+  "First session with a no-nonsense therapist.",
+  "Asking your boss for a raise you absolutely did not earn.",
+  "Awkward family Thanksgiving dinner after the politics argument.",
+  "Explaining to tech support why your laptop smells like maple syrup.",
+  "Panicking on a reality cooking show with thirty seconds left.",
+  "Being interrogated by a detective who clearly has evidence.",
+  "Doing a live weather forecast as a hurricane approaches the studio.",
+  "Bargaining with a used-car salesman over a visibly haunted minivan.",
+  "Defending a PhD thesis to a hostile review committee.",
+  "Stuck in customer service hell trying to cancel a gym membership.",
+  "Pitching a startup to VCs who clearly already hate it.",
+  "Addressing a packed press conference after a very public scandal.",
+  "Conducting a job interview for a candidate who is, frankly, unsettling.",
+  "Negotiating a hostage situation in a small-town post office.",
+  "Giving marriage vows that you're improvising in real time.",
+  "Running for class president on a platform of free fries for all.",
+  "Explaining to a jury why the goose, specifically, was inevitable.",
+  "Hosting a live home-shopping segment for a product you've never seen.",
+];

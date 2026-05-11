@@ -1,0 +1,399 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Persona Court — Parchment & Ink design tokens
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  /* paper */
+  --pc-parchment: #efe3c2;
+  --pc-parchment-2: #e6d5ad;
+  --pc-parchment-3: #d9c389;
+  --pc-vellum: #f5ebcf;
+
+  /* ink */
+  --pc-ink: #1a1208;
+  --pc-ink-soft: #3a2a17;
+  --pc-ink-muted: rgba(26, 18, 8, 0.55);
+  --pc-ink-faint: rgba(26, 18, 8, 0.3);
+
+  /* seals */
+  --pc-oxblood: #7a1e2d;
+  --pc-oxblood-deep: #581421;
+  --pc-brass: #a47e2a;
+  --pc-brass-deep: #7d5d18;
+  --pc-forest: #2f4d36;
+  --pc-rule: rgba(26, 18, 8, 0.18);
+}
+
+@theme inline {
+  --color-background: var(--pc-parchment);
+  --color-foreground: var(--pc-ink);
+  --font-display: "Cinzel", serif;
+  --font-body: "EB Garamond", serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--pc-parchment);
+  color: var(--pc-ink);
+  font-family: "EB Garamond", "Georgia", serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Paper grain — fibers + faint vignette */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(126, 78, 30, 0.08), transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(80, 50, 20, 0.1), transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.28 0 0 0 0 0.12 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  opacity: 0.45;
+}
+
+/* Vignette edges */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(50, 30, 10, 0.18) 100%
+  );
+}
+
+/* Make every page content sit above the texture layers */
+#__next,
+main,
+.page-root {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Selection ────────────────────────────────────────────────────────── */
+::selection {
+  background: var(--pc-oxblood);
+  color: var(--pc-vellum);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--pc-ink-faint);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pc-oxblood);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Reusable document components
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* The base paper card — looks like a stamped court document */
+.doc-card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 230, 0.4), transparent 25%),
+    var(--pc-vellum);
+  border: 1px solid var(--pc-ink);
+  box-shadow:
+    inset 0 0 0 1px var(--pc-parchment),
+    inset 0 0 0 2px var(--pc-ink),
+    0 12px 30px -16px rgba(50, 30, 10, 0.45),
+    0 2px 0 rgba(50, 30, 10, 0.1);
+}
+
+/* Corner ornaments — small filled squares like notarial marks */
+.doc-card::before,
+.doc-card::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--pc-ink);
+}
+.doc-card::before {
+  top: 8px;
+  left: 8px;
+  box-shadow:
+    calc(100% + 16px) 0 0 var(--pc-ink),
+    0 calc(100% + 16px) 0 var(--pc-ink),
+    calc(100% + 16px) calc(100% + 16px) 0 var(--pc-ink);
+}
+.doc-card::after {
+  display: none;
+}
+
+/* Smaller card variant without heavy corner marks */
+.doc-card-soft {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 230, 0.35), transparent 30%),
+    var(--pc-vellum);
+  border: 1px solid var(--pc-rule);
+  box-shadow:
+    inset 0 0 0 1px rgba(26, 18, 8, 0.06),
+    0 4px 14px -10px rgba(50, 30, 10, 0.5);
+}
+
+/* "Stamp" label — uppercase tracked Cinzel */
+.stamp {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-size: 11px;
+  color: var(--pc-oxblood);
+}
+.stamp-ink {
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-size: 11px;
+  color: var(--pc-ink);
+}
+.stamp-brass {
+  color: var(--pc-brass-deep);
+}
+
+/* Section divider — double rule with diamond */
+.rule-fancy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--pc-ink-muted);
+}
+.rule-fancy::before,
+.rule-fancy::after {
+  content: "";
+  flex: 1;
+  height: 0;
+  border-top: 1px solid var(--pc-ink);
+  border-bottom: 1px solid var(--pc-ink);
+  padding-top: 2px;
+}
+
+/* Heavy serif display heading */
+.display {
+  font-family: "Cinzel", serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--pc-ink);
+  line-height: 0.95;
+}
+
+/* Body serif */
+.prose-court {
+  font-family: "EB Garamond", "Georgia", serif;
+  color: var(--pc-ink);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+/* Buttons */
+.btn-seal {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 13px;
+  padding: 16px 26px;
+  background: var(--pc-oxblood);
+  color: var(--pc-vellum);
+  border: 1px solid var(--pc-oxblood-deep);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 180, 0.18),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25),
+    0 4px 0 var(--pc-oxblood-deep),
+    0 10px 18px -8px rgba(80, 12, 28, 0.55);
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+  cursor: pointer;
+}
+.btn-seal:hover:not(:disabled) {
+  background: #8c2434;
+}
+.btn-seal:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 180, 0.18),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25),
+    0 2px 0 var(--pc-oxblood-deep);
+}
+.btn-seal:disabled {
+  background: var(--pc-parchment-3);
+  color: var(--pc-ink-muted);
+  border-color: var(--pc-rule);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 12px;
+  padding: 14px 22px;
+  background: transparent;
+  color: var(--pc-ink);
+  border: 1px solid var(--pc-ink);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-ghost:hover {
+  background: rgba(26, 18, 8, 0.08);
+}
+
+/* Form fields styled like fill-in lines on a document */
+.ink-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--pc-ink);
+  padding: 8px 4px;
+  color: var(--pc-ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 16px;
+  letter-spacing: 0.18em;
+  outline: none;
+  text-transform: uppercase;
+}
+.ink-input::placeholder {
+  color: var(--pc-ink-faint);
+  letter-spacing: 0.3em;
+}
+.ink-input:focus {
+  border-bottom-color: var(--pc-oxblood);
+}
+
+.ink-textarea {
+  width: 100%;
+  background: rgba(255, 250, 230, 0.5);
+  border: 1px solid var(--pc-ink);
+  padding: 16px 18px;
+  color: var(--pc-ink);
+  font-family: "EB Garamond", serif;
+  font-size: 18px;
+  line-height: 1.55;
+  resize: none;
+  outline: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    rgba(26, 18, 8, 0.1) 28px
+  );
+  background-position: 0 12px;
+}
+.ink-textarea:focus {
+  box-shadow: inset 0 0 0 1px var(--pc-oxblood);
+  border-color: var(--pc-oxblood);
+}
+.ink-textarea::placeholder {
+  color: var(--pc-ink-faint);
+  font-style: italic;
+}
+
+/* Wax seal — circular stamp with embossed look */
+.wax-seal {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #b03548 0%, #7a1e2d 45%, #4a0e1d 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f5d9b8;
+  font-family: "Cinzel", serif;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  font-size: 14px;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 0 0 2px rgba(245, 215, 175, 0.4),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.35),
+    inset 0 6px 10px rgba(255, 200, 170, 0.25),
+    0 8px 16px -6px rgba(80, 12, 28, 0.5);
+  transform: rotate(-8deg);
+}
+.wax-seal::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  border: 1px dashed rgba(245, 215, 175, 0.45);
+}
+
+/* Subtle hover lift */
+.lift {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes ink-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ink-rise {
+  animation: ink-rise 0.5s ease-out both;
+}
+
+@keyframes gavel-swing {
+  0%, 100% { transform: rotate(-22deg); }
+  45% { transform: rotate(18deg); }
+  55% { transform: rotate(15deg); }
+}
+.gavel-swing {
+  transform-origin: 70% 30%;
+  animation: gavel-swing 1.4s ease-in-out infinite;
+}
+
+@keyframes scale-tilt {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+.scale-tilt {
+  transform-origin: 50% 0%;
+  animation: scale-tilt 3s ease-in-out infinite;
+}
