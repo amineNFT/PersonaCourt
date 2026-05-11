@@ -12,6 +12,45 @@ function writeClient(address: string) {
   return createClient({ chain: getActiveChain(), account: address as `0x${string}` });
 }
 
+// Fast confirmation: poll gen_getTransactionByHash via genlayer-js' client.getTransaction
+// and resolve as soon as the leader_receipt is present. This is dramatically
+// faster than waitForTransactionReceipt({status:"ACCEPTED"}) which waits for
+// full network consensus. The leader receipt already contains the LLM output
+// (consensus_data.leader_receipt[0].eq_outputs["0"]) for LLM-using calls.
+async function waitForLeaderReceipt(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: any,
+  hash: `0x${string}`,
+  opts: { maxMs?: number; intervalMs?: number } = {},
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<any | null> {
+  const maxMs = opts.maxMs ?? 60_000;
+  const intervalMs = opts.intervalMs ?? 1500;
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    try {
+      const tx = await client.getTransaction({ hash });
+      const lr =
+        tx?.consensus_data?.leader_receipt ??
+        tx?.consensusData?.leaderReceipt ??
+        tx?.leader_receipt;
+      if (Array.isArray(lr) && lr.length > 0) {
+        return tx;
+      }
+      // Some nodes expose `status` directly — bail early if explicitly failed.
+      const status = tx?.status ?? tx?.tx_status;
+      if (typeof status === "string" && /FAIL|REJECT|REVERT/i.test(status)) {
+        throw new Error(`Transaction ${status}`);
+      }
+    } catch (e) {
+      // Transient — keep polling. Surface only the last error if we time out.
+      void e;
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  return null;
+}
+
 export interface PlayerResult {
   address: string;
   character_adherence: number;
@@ -156,28 +195,29 @@ export async function submitEntry(
     throw e;
   }
 
-  // Wait for the receipt so the UI advances only after the tx is accepted.
+  // Fast path: poll gen_getTransactionByHash until the leader_receipt is
+  // present (leader executed). This is significantly faster than waiting for
+  // full ACCEPTED status across the network.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (client as any).waitForTransactionReceipt({
-      hash: txHash,
-      status: "ACCEPTED",
-      retries: 80,
-      interval: 2500,
+    const tx = await waitForLeaderReceipt(client, txHash, {
+      maxMs: 45_000,
+      intervalMs: 1200,
     });
-    console.log("[court submitEntry] tx accepted:", txHash);
-  } catch (e) {
-    console.warn("[court submitEntry] receipt wait failed:", e);
-    // Receipt wait can time out / blip while the tx is genuinely accepted.
-    // Re-check chain state before declaring failure.
-    const exists = await entryExistsOnChain(gameId, round, callerAddress);
-    if (exists) {
-      console.log("[court submitEntry] entry confirmed via state check");
+    if (tx) {
+      console.log("[court submitEntry] leader receipt seen:", txHash);
       return txHash;
     }
-    throw e;
+    // Timed out waiting — fall through to state check.
+    console.warn("[court submitEntry] no leader receipt within window, checking chain state");
+  } catch (e) {
+    console.warn("[court submitEntry] poll failed:", e);
   }
-  return txHash;
+  const exists = await entryExistsOnChain(gameId, round, callerAddress);
+  if (exists) {
+    console.log("[court submitEntry] entry confirmed via state check");
+    return txHash;
+  }
+  throw new Error("Transaction not processed by consensus");
 }
 
 export async function finalizeGame(
@@ -209,16 +249,19 @@ export async function finalizeGame(
   });
   console.log("[finalizeGame] tx:", txHash);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tx = await (client as any).waitForTransactionReceipt({
-    hash: txHash,
-    status: "ACCEPTED",
-    retries: 120,
-    interval: 3000,
+  // Fast path: poll gen_getTransactionByHash until the leader_receipt is
+  // present. The LLM verdict lives in
+  //   consensus_data.leader_receipt[0].eq_outputs["0"]
+  // and is available well before the tx reaches ACCEPTED status.
+  const tx = await waitForLeaderReceipt(client, txHash, {
+    maxMs: 180_000,
+    intervalMs: 2000,
   });
 
-  const extracted = extractResult(tx);
-  if (extracted) return fillXp(extracted);
+  if (tx) {
+    const extracted = extractResult(tx);
+    if (extracted) return fillXp(extracted);
+  }
 
   const full = await fetchFullReceipt(client, txHash);
   if (full) {
