@@ -165,6 +165,40 @@ export async function entryExistsOnChain(
   }
 }
 
+export async function createGame(
+  callerAddress: string,
+  gameId: string,
+  roster: string[],
+  scenarios: ScenarioMeta[],
+): Promise<`0x${string}`> {
+  const client = writeClient(callerAddress);
+  const txHash = await client.writeContract({
+    address: CONTRACT(),
+    functionName: "create_game",
+    args: [gameId, JSON.stringify(roster), JSON.stringify(scenarios)],
+    value: BigInt(0),
+    leaderOnly: true,
+  });
+  console.log("[court createGame] tx sent:", { gameId, roster, txHash });
+
+  // Wait until the committed game is visible on-chain before players submit.
+  const start = Date.now();
+  while (Date.now() - start < 45_000) {
+    try {
+      const committed = await readClient().readContract({
+        address: CONTRACT(),
+        functionName: "is_committed",
+        args: [gameId],
+      });
+      if (committed) return txHash;
+    } catch (e) {
+      void e;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  return txHash;
+}
+
 export async function submitEntry(
   callerAddress: string,
   gameId: string,
@@ -243,7 +277,7 @@ export async function finalizeGame(
   const txHash = await client.writeContract({
     address: CONTRACT(),
     functionName: "finalize_game",
-    args: [gameId, JSON.stringify(scenarios), currentWeek],
+    args: [gameId, currentWeek],
     value: BigInt(0),
     leaderOnly: true,
   });

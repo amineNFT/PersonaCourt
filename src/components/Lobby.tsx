@@ -6,6 +6,7 @@ import { NetworkService, PlayerInfo } from "@/lib/network";
 import { SCENARIOS } from "@/data/scenarios";
 import { rollScenario } from "@/data/personas";
 import type { ScenarioMeta } from "@/lib/genlayer";
+import { createGame } from "@/lib/genlayer";
 import type { GameContext } from "@/app/page";
 
 interface Props {
@@ -133,9 +134,11 @@ export default function Lobby({ onLeave, onStart }: Props) {
     }
   };
 
-  const hostStartGame = () => {
+  const [starting, setStarting] = useState(false);
+
+  const hostStartGame = async () => {
     const net = networkRef.current;
-    if (!net || players.length < 2) return;
+    if (!net || players.length < 2 || !address || starting) return;
     const used: string[] = [];
     const scenarios: ScenarioMeta[] = [];
     for (let i = 1; i <= ROUNDS_PER_GAME; i++) {
@@ -144,6 +147,24 @@ export default function Lobby({ onLeave, onStart }: Props) {
       scenarios.push({ round: i, scenario: s });
     }
     const gameId = `pc-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+    const roster = players.map((p) => p.address);
+
+    setStarting(true);
+    setError(null);
+    setStatus("Sealing the docket on-chain…");
+    try {
+      // Commit host, roster, scenarios and rounds before anyone testifies.
+      await createGame(address, gameId, roster, scenarios);
+    } catch (e) {
+      console.error(e);
+      setError("The court could not open the docket. Try again.");
+      setStatus("");
+      setStarting(false);
+      return;
+    }
+    setStatus("");
+    setStarting(false);
+
     net.broadcast({ type: "GAME_START", payload: { scenarios, gameId } });
     onStart({
       gameId,
@@ -261,7 +282,7 @@ export default function Lobby({ onLeave, onStart }: Props) {
           <div className="text-center mb-8">
             <div className="stamp mb-3">Official Summons</div>
             <div className="rule-fancy mb-4">
-              <span style={{ fontFamily: "Cinzel", fontSize: 11, letterSpacing: "0.4em" }}>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: "0.4em" }}>
                 ✦
               </span>
             </div>
@@ -276,7 +297,7 @@ export default function Lobby({ onLeave, onStart }: Props) {
               {roomCode}
             </div>
             <div className="rule-fancy mt-4">
-              <span style={{ fontFamily: "Cinzel", fontSize: 11, letterSpacing: "0.4em" }}>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: "0.4em" }}>
                 ✦
               </span>
             </div>
@@ -295,7 +316,7 @@ export default function Lobby({ onLeave, onStart }: Props) {
             <div className="flex items-end justify-between mb-3">
               <div
                 style={{
-                  fontFamily: "Cinzel",
+                  fontFamily: "var(--font-display)",
                   fontWeight: 700,
                   fontSize: 18,
                   letterSpacing: "0.06em",
@@ -323,8 +344,8 @@ export default function Lobby({ onLeave, onStart }: Props) {
                       border: "1px solid var(--pc-ink)",
                       background: p
                         ? isJudge
-                          ? "rgba(122, 30, 45, 0.08)"
-                          : "rgba(255, 250, 230, 0.5)"
+                          ? "rgba(224, 161, 58, 0.14)"
+                          : "rgba(255, 255, 255, 0.045)"
                         : "transparent",
                       borderStyle: p ? "solid" : "dashed",
                       borderColor: p ? "var(--pc-ink)" : "var(--pc-rule)",
@@ -345,7 +366,7 @@ export default function Lobby({ onLeave, onStart }: Props) {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontFamily: "Cinzel",
+                        fontFamily: "var(--font-display)",
                         fontSize: 13,
                         fontWeight: 700,
                       }}
@@ -363,7 +384,7 @@ export default function Lobby({ onLeave, onStart }: Props) {
                           </div>
                           <div
                             style={{
-                              fontFamily: "Cinzel",
+                              fontFamily: "var(--font-display)",
                               fontSize: 9,
                               letterSpacing: "0.28em",
                               textTransform: "uppercase",
@@ -377,7 +398,7 @@ export default function Lobby({ onLeave, onStart }: Props) {
                         <div
                           className="italic"
                           style={{
-                            fontFamily: "EB Garamond",
+                            fontFamily: "var(--font-body)",
                             fontSize: 14,
                             color: "var(--pc-ink-faint)",
                           }}
@@ -396,8 +417,8 @@ export default function Lobby({ onLeave, onStart }: Props) {
           <div
             className="p-6 mb-8"
             style={{
-              background: "rgba(255, 250, 230, 0.4)",
-              border: "1px solid var(--pc-ink)",
+              background: "rgba(255, 255, 255, 0.035)",
+              border: "1px solid var(--pc-rule)",
             }}
           >
             <div className="stamp mb-4">Rules of Proceedings</div>
@@ -425,10 +446,12 @@ export default function Lobby({ onLeave, onStart }: Props) {
           {mode === "host" ? (
             <button
               onClick={hostStartGame}
-              disabled={players.length < 2}
+              disabled={players.length < 2 || starting}
               className="btn-seal w-full"
             >
-              {players.length < 2
+              {starting
+                ? "Sealing the Docket…"
+                : players.length < 2
                 ? `Awaiting ${2 - players.length} More Juror${players.length === 1 ? "" : "s"}`
                 : "⚖  Call the Court to Order"}
             </button>
